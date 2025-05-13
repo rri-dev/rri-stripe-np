@@ -4,14 +4,23 @@
   "main": "dist/index.js",
   "types": "src/index.d.ts",
   "scripts": {
-    "build": "tsc -p .",
+    "build": "rm -rf dist && tsc -p .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "Stripe Toolset for RRI apps",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rri-dev/rri-stripe-np.git"
+  },
+  "homepage": "https://github.com/rri-dev/rri-stripe-np",
   "dependencies": {
+    "stripe": "^18.1.0",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17"
   }
 }
