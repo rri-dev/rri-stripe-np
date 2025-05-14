@@ -8,5 +8,10 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true
-  }
+  },
+  "exclude": [
+    "test-method.ts",
+    "dist",
+    "release_notes"
+  ]
 }

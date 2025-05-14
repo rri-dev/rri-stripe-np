@@ -1,1 +1,1 @@
-export { FooOperation } from './foo-operation';
+export { StripeHelper } from './stripe-helper';
