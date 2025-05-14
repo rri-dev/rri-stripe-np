@@ -10,6 +10,8 @@
     "skipLibCheck": true
   },
   "exclude": [
-    "test-method.ts"
+    "test-method.ts",
+    "dist",
+    "release_notes"
   ]
 }
