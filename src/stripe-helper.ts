@@ -1,7 +1,7 @@
 export class StripeHelper {
 
     stripe: any;
-    static debugLogging = process.env.DEBUG_LOGGING === 'true';;
+    debug = process.env.DEBUG === 'true';
 
     constructor() {
         if (!process.env.STRIPE_API_KEY) throw new Error("Missing env var: STRIPE_API_KEY");
@@ -11,7 +11,7 @@ export class StripeHelper {
     async isUSBankTransfer(chargeId: string): Promise<boolean> {
 
         const logPrefix = '::isUSBankTransfer::';
-        console.log(`${logPrefix}checking charge id: ${chargeId} to see if it is a US Bank transfer`);
+        if(this.debug) console.log(`${logPrefix}checking charge id: ${chargeId} to see if it is a US Bank transfer`);
 
         try {
             let derivedPi: string | undefined = undefined;
@@ -23,28 +23,34 @@ export class StripeHelper {
 
             }
             if (!derivedPi) {
-                console.log(`${logPrefix}unable to derive pi id from ${chargeId}`);
+                if(this.debug) console.log(`${logPrefix}unable to derive pi id from ${chargeId}`);
                 return false
             }
 
-            console.log(`${logPrefix}checking whether ${derivedPi} is a us bank transfer`);
+            if(this.debug) console.log(`${logPrefix}checking whether ${derivedPi} is a us bank transfer`);
             const pi = await this.stripe.paymentIntents.retrieve(derivedPi) as PaymentIntent;
-            if (!pi.charges) return false;
-            const latestCharge = pi.charges.data.find(c => c.id === pi.latest_charge);
+            //if(this.debug) console.log(pi);
+            if (!pi.charges && !pi.latest_charge) return false;
+            let latestCharge = pi.charges?.data.find(c => c.id === pi.latest_charge);
+            if (!latestCharge) {
+                if(this.debug) console.log(`${logPrefix}retrieving latest_charge: ${pi.latest_charge}`);
+                latestCharge = await this.stripe.charges.retrieve(pi.latest_charge);
+            }
+            if(this.debug) console.log('latestCharge.payment_method_details:', latestCharge?.payment_method_details);
             if (!latestCharge || !latestCharge.payment_method_details) return false;
             return latestCharge.payment_method_details.type === "us_bank_account"
         } catch (err: any) {
-            console.log(`${logPrefix}error retrieving pi with id ${chargeId}; error was: ${err.message}`);
+            if(this.debug) console.log(`${logPrefix}error retrieving pi with id ${chargeId}; error was: ${err.message}`);
             return false;
         }
     }
 
-    static isPiUsBankTransfer(paymentIntent: PaymentIntent): boolean {
+    async isPiUsBankTransfer(paymentIntent: PaymentIntent): Promise<boolean> {
 
         const logPrefix = '::isPiUsBankTransfer::';
         if (!paymentIntent.id || !paymentIntent.id.startsWith("pi_")) return false;
         if (!paymentIntent.charges) return false;
-        console.log(`${logPrefix}checking pi id: ${paymentIntent.id} to see if it is a US Bank transfer`);
+        if(this.debug) console.log(`${logPrefix}checking pi id: ${paymentIntent.id} to see if it is a US Bank transfer`);
 
         try {
 
@@ -52,9 +58,27 @@ export class StripeHelper {
             if (!latestCharge || !latestCharge.payment_method_details) return false;
             return latestCharge.payment_method_details.type === "us_bank_account"
         } catch (err: any) {
-            console.log(`${logPrefix}error determining if ${paymentIntent.id} is a bank transfer; error was: ${err.message}`);
+            if(this.debug) console.log(`${logPrefix}error determining if ${paymentIntent.id} is a bank transfer; error was: ${err.message}`);
             return false;
         }
+
+    }
+
+    async getCustomersByEmail(email: string): Promise<any[] | undefined> {
+
+        const logPrefix = '::getCustomerByEmail::';
+        try {
+            const searchResult = await this.stripe.customers.search({
+                query: `email:"${email}"`
+            });
+            if(this.debug) console.log(searchResult);
+            return searchResult.data;
+            
+        } catch (err: any) {
+            if(this.debug) console.log(err);
+            return undefined;
+        }
+        
 
     }
 }
